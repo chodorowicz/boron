@@ -215,7 +215,7 @@ gulp.task('clean:dist', function(done) {
 	del([DIST_PATH], done);
 });
 
-gulp.task('build:dist', ['prepare:dist'], function() {
+gulp.task('build:dist', [], function() {
 
 	var standalone = browserify('./' + SRC_PATH + '/' + PACKAGE_FILE, {
 			standalone: COMPONENT_NAME

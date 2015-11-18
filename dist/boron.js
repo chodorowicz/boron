@@ -13,31 +13,31 @@ module.exports = {
 
 var getVendorPropertyName = require('./getVendorPropertyName');
 
-module.exports = function (target, sources){
-    var to = Object(target);
-    var hasOwnProperty = Object.prototype.hasOwnProperty;
+module.exports = function(target, sources) {
+  var to = Object(target);
+  var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-    for (var nextIndex = 1; nextIndex < arguments.length; nextIndex++) {
-        var nextSource = arguments[nextIndex];
-        if (nextSource == null) {
-            continue;
-        }
-
-        var from = Object(nextSource);
-
-        for (var key in from) {
-            if (hasOwnProperty.call(from, key)) {
-                to[key] = from[key];
-            }
-        }
+  for (var nextIndex = 1; nextIndex < arguments.length; nextIndex++) {
+    var nextSource = arguments[nextIndex];
+    if (nextSource == null) {
+      continue;
     }
 
-    var prefixed = {};
-    for (var key in to) {
-        prefixed[getVendorPropertyName(key)] = to[key]
-    }
+    var from = Object(nextSource);
 
-    return prefixed
+    for (var key in from) {
+      if (hasOwnProperty.call(from, key)) {
+        to[key] = from[key];
+      }
+    }
+  }
+
+  var prefixed = {};
+  for (var key in to) {
+    prefixed[getVendorPropertyName(key)] = to[key]
+  }
+
+  return prefixed
 }
 
 },{"./getVendorPropertyName":4}],3:[function(require,module,exports){
@@ -45,41 +45,51 @@ module.exports = function (target, sources){
 
 var cssVendorPrefix;
 
-module.exports = function (){
+module.exports = function() {
 
-    if(cssVendorPrefix) return cssVendorPrefix;
+  if (cssVendorPrefix) return cssVendorPrefix;
 
-    var styles = window.getComputedStyle(document.documentElement, '');
-    var pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
-    )[1];
+  var styles = window.getComputedStyle(document.documentElement, '');
+  var pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1];
 
-    return cssVendorPrefix = '-' + pre + '-';
+  return cssVendorPrefix = '-' + pre + '-';
 }
 
 },{}],4:[function(require,module,exports){
 'use strict';
 
-var div = document.createElement('div');
+var builtinStyle = document.createElement('div').style;
 var prefixes = ['Moz', 'Webkit', 'O', 'ms'];
 var domVendorPrefix;
 
 // Helper function to get the proper vendor property name. (transition => WebkitTransition)
-module.exports = function (prop) {
+module.exports = function(prop) {
+  var vendorProp;
+  if (prop in builtinStyle) return prop;
+  var UpperProp = prop.charAt(0).toUpperCase() + prop.substr(1);
 
-    if (prop in div.style) return prop;
-
-    var prop = prop.charAt(0).toUpperCase() + prop.substr(1);
-    if(domVendorPrefix){
-        return domVendorPrefix + prop;
+  if (domVendorPrefix) {
+    vendorProp = domVendorPrefix + UpperProp;
+    if (vendorProp in builtinStyle) {
+      return vendorProp;
     }else{
-        for (var i=0; i<prefixes.length; ++i) {
-            var vendorProp = prefixes[i] + prop;
-            if (vendorProp in div.style) {
-                domVendorPrefix = prefixes[i];
-                return vendorProp;
-            }
-        }
+      return prop;
     }
+
+  } else {
+
+    for (var i = 0; i < prefixes.length; ++i) {
+      vendorProp = prefixes[i] + UpperProp;
+      if (vendorProp in builtinStyle) {
+        domVendorPrefix = prefixes[i];
+        return vendorProp;
+      }
+    }
+
+    if(!domVendorPrefix) {
+      return prop;
+    }
+  }
 }
 
 },{}],5:[function(require,module,exports){
@@ -89,29 +99,29 @@ var insertRule = require('./insertRule');
 var vendorPrefix = require('./getVendorPrefix')();
 var index = 0;
 
-module.exports = function (keyframes) {
-    // random name
-    var name = 'anim_'+ (++index) + (+new Date);
-    var css = "@" + vendorPrefix + "keyframes " + name + " {";
+module.exports = function(keyframes) {
+  // random name
+  var name = 'anim_' + (++index) + (+new Date);
+  var css = "@" + vendorPrefix + "keyframes " + name + " {";
 
-    for (var key in keyframes) {
-        css += key + " {";
+  for (var key in keyframes) {
+    css += key + " {";
 
-        for (var property in keyframes[key]) {
-            var part = ":" + keyframes[key][property] + ";";
-            // We do vendor prefix for every property
-            css += vendorPrefix + property + part;
-            css += property + part;
-        }
-
-        css += "}";
+    for (var property in keyframes[key]) {
+      var part = ":" + keyframes[key][property] + ";";
+      // We do vendor prefix for every property
+      css += vendorPrefix + property + part;
+      css += property + part;
     }
 
     css += "}";
+  }
 
-    insertRule(css);
+  css += "}";
 
-    return name
+  insertRule(css);
+
+  return name
 }
 
 },{"./getVendorPrefix":3,"./insertRule":6}],6:[function(require,module,exports){
@@ -119,20 +129,20 @@ module.exports = function (keyframes) {
 
 var extraSheet;
 
-module.exports = function (css) {
+module.exports = function(css) {
 
-    if (!extraSheet) {
-        // First time, create an extra stylesheet for adding rules
-        extraSheet = document.createElement('style');
-        document.getElementsByTagName('head')[0].appendChild(extraSheet);
-        // Keep reference to actual StyleSheet object (`styleSheet` for IE < 9)
-        extraSheet = extraSheet.sheet || extraSheet.styleSheet;
-    }
+  if (!extraSheet) {
+    // First time, create an extra stylesheet for adding rules
+    extraSheet = document.createElement('style');
+    document.getElementsByTagName('head')[0].appendChild(extraSheet);
+    // Keep reference to actual StyleSheet object (`styleSheet` for IE < 9)
+    extraSheet = extraSheet.sheet || extraSheet.styleSheet;
+  }
 
-    var index = (extraSheet.cssRules || extraSheet.rules).length;
-    extraSheet.insertRule(css, index);
+  var index = (extraSheet.cssRules || extraSheet.rules).length;
+  extraSheet.insertRule(css, index);
 
-    return extraSheet;
+  return extraSheet;
 }
 
 },{}],7:[function(require,module,exports){
@@ -191,7 +201,7 @@ function detectEvents() {
   }
 }
 
-if(typeof window !== 'undefined'){
+if (typeof window !== 'undefined') {
   detectEvents();
 }
 
@@ -233,42 +243,7 @@ module.exports = {
 };
 
 },{}],8:[function(require,module,exports){
-var animation = require('./animations/drop');
 var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/drop":14,"./modalFactory":20}],9:[function(require,module,exports){
-var animation = require('./animations/fade');
-var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/fade":15,"./modalFactory":20}],10:[function(require,module,exports){
-var animation = require('./animations/fly');
-var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/fly":16,"./modalFactory":20}],11:[function(require,module,exports){
-var animation = require('./animations/outline');
-var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/outline":17,"./modalFactory":20}],12:[function(require,module,exports){
-var animation = require('./animations/scale');
-var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/scale":18,"./modalFactory":20}],13:[function(require,module,exports){
-var animation = require('./animations/wave');
-var modalFactory = require('./modalFactory');
-
-module.exports = modalFactory(animation);
-
-},{"./animations/wave":19,"./modalFactory":20}],14:[function(require,module,exports){
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -355,7 +330,7 @@ var hideBackdropAnimation = animation.hideBackdropAnimation;
 var showContentAnimation = animation.showContentAnimation;
 var hideContentAnimation = animation.hideContentAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'modal';
     },
@@ -399,9 +374,10 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],15:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],9:[function(require,module,exports){
+var modalFactory = require('./modalFactory');
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -459,7 +435,7 @@ var hideContentAnimation = animation.hideContentAnimation;
 var showBackdropAnimation = animation.showBackdropAnimation;
 var hideBackdropAnimation = animation.hideBackdropAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'content';
     },
@@ -498,9 +474,10 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],16:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],10:[function(require,module,exports){
+var modalFactory = require('./modalFactory');
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -574,7 +551,7 @@ var hideContentAnimation = animation.hideContentAnimation;
 var showBackdropAnimation = animation.showBackdropAnimation;
 var hideBackdropAnimation = animation.hideBackdropAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'content';
     },
@@ -613,11 +590,13 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],17:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],11:[function(require,module,exports){
 (function (global){
-var React = (typeof window !== "undefined" ? window.React : typeof global !== "undefined" ? global.React : null);
+var modalFactory = require('./modalFactory');
+
+var React = (typeof window !== "undefined" ? window['React'] : typeof global !== "undefined" ? global['React'] : null);
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -656,13 +635,13 @@ var animation = {
             opacity: 0
         },
         '100%': {
-            opacity: 0.9
+            opacity: 0.85
         },
     }),
 
     hideBackdropAnimation: insertKeyframesRule({
         '0%': {
-            opacity: 0.9
+            opacity: 0.85
         },
         '100%': {
             opacity: 0
@@ -677,7 +656,7 @@ var hideContentAnimation = animation.hideContentAnimation;
 var showBackdropAnimation = animation.showBackdropAnimation;
 var hideBackdropAnimation = animation.hideBackdropAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'content';
     },
@@ -744,7 +723,7 @@ module.exports = {
             bottom: 0,
             left: 0,
             zIndex: 1040,
-            backgroundColor: "#373A47",
+            backgroundColor: "#242424",
             animationFillMode: 'forwards',
             animationDuration: '0.4s',
             animationName: willHidden ? hideBackdropAnimation : showBackdropAnimation,
@@ -761,10 +740,11 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],18:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],12:[function(require,module,exports){
+var modalFactory = require('./modalFactory');
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -824,7 +804,7 @@ var hideContentAnimation = animation.hideContentAnimation;
 var showBackdropAnimation = animation.showBackdropAnimation;
 var hideBackdropAnimation = animation.hideBackdropAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'content';
     },
@@ -863,9 +843,10 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],19:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],13:[function(require,module,exports){
+var modalFactory = require('./modalFactory');
 var insertKeyframesRule = require('react-kit/insertKeyframesRule');
 var appendVendorPrefix = require('react-kit/appendVendorPrefix');
 
@@ -1067,7 +1048,7 @@ var hideContentAnimation = animation.hideContentAnimation;
 var showBackdropAnimation = animation.showBackdropAnimation;
 var hideBackdropAnimation = animation.hideBackdropAnimation;
 
-module.exports = {
+module.exports = modalFactory({
     getRef: function(willHidden) {
         return 'content';
     },
@@ -1106,11 +1087,11 @@ module.exports = {
             animationTimingFunction: (willHidden ? hideAnimation : showAnimation).animationTimingFunction
         })
     }
-}
+});
 
-},{"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],20:[function(require,module,exports){
+},{"./modalFactory":14,"react-kit/appendVendorPrefix":2,"react-kit/insertKeyframesRule":5}],14:[function(require,module,exports){
 (function (global){
-var React = (typeof window !== "undefined" ? window.React : typeof global !== "undefined" ? global.React : null);
+var React = (typeof window !== "undefined" ? window['React'] : typeof global !== "undefined" ? global['React'] : null);
 var transitionEvents = require('react-kit/transitionEvents');
 
 module.exports = function(animation){

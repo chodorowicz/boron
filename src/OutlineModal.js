@@ -39,13 +39,13 @@ var animation = {
             opacity: 0
         },
         '100%': {
-            opacity: 0.9
+            opacity: 0.85
         },
     }),
 
     hideBackdropAnimation: insertKeyframesRule({
         '0%': {
-            opacity: 0.9
+            opacity: 0.85
         },
         '100%': {
             opacity: 0
@@ -127,7 +127,7 @@ module.exports = modalFactory({
             bottom: 0,
             left: 0,
             zIndex: 1040,
-            backgroundColor: "#373A47",
+            backgroundColor: "#242424",
             animationFillMode: 'forwards',
             animationDuration: '0.4s',
             animationName: willHidden ? hideBackdropAnimation : showBackdropAnimation,
